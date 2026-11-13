@@ -13,6 +13,7 @@ How it works
 Results are printed and also saved to cut_probabilities.json for the website.
 """
 
+import functools
 import json
 import math
 import random
@@ -25,6 +26,7 @@ from league_report import BENCH_SLOTS, SLOT_NAMES, connect
 SIMULATIONS = 20000
 GAME_HOURS = 3.25  # rough real-time length of an NFL game
 MIN_SAMPLES = 30   # need this many past player-games to trust a position's calibration
+MIN_SWAP_GAIN = 1.0  # a bench player must project this many points better to be assumed to start
 
 HERE = Path(__file__).resolve().parent
 CALIBRATION_FILE = HERE / "calibration.json"
@@ -103,8 +105,13 @@ def fraction_remaining(player, now):
     return min(1.0, max(0.0, 1 - hours_elapsed / GAME_HOURS))
 
 
-def player_row(player, now):
-    """Plain-data description of one player, for the website."""
+def player_row(player, now, slot=None, assumed=None):
+    """Plain-data description of one player, for the website.
+
+    slot: the slot the model assumes he ends up in (defaults to where he is now).
+    assumed: "in" if the model moved him into the lineup, "out" if it benched him.
+    """
+    slot = slot or player.slot_position
     remaining = fraction_remaining(player, now)
     if player.on_bye_week:
         status = "bye"
@@ -118,13 +125,30 @@ def player_row(player, now):
         status = "upcoming"
     return {
         "name": player.name,
-        "slot": SLOT_NAMES.get(player.slot_position, player.slot_position),
+        "slot": SLOT_NAMES.get(slot, slot),
         "position": str(player.position),
         "nfl_team": str(player.proTeam),
         "points": round(player.points, 2),
         "projected": round(player.projected_points, 2),
         "status": status,
+        "assumed": assumed,
     }
+
+
+def team_rows(entry, now):
+    """Starters and bench for the website, reflecting the assumed lineup."""
+    was_starter = {id(p) for p in entry["lineup"] if p.slot_position not in BENCH_SLOTS}
+    starting = {id(p) for _, p in entry["assumed"]}
+    starters = [
+        player_row(p, now, slot, None if id(p) in was_starter else "in")
+        for slot, p in entry["assumed"]
+    ]
+    bench = [
+        player_row(p, now, "BE" if id(p) in was_starter else None, "out" if id(p) in was_starter else None)
+        for p in entry["lineup"]
+        if id(p) not in starting
+    ]
+    return starters, bench
 
 
 def build_sampler(player, calibration, now):
@@ -150,15 +174,76 @@ def build_sampler(player, calibration, now):
     return player.points, lambda: random.gammavariate(shape, scale)
 
 
+def game_started(player, now):
+    """ESPN locks a player into his lineup slot once his game kicks off."""
+    return not player.on_bye_week and hasattr(player, "game_date") and now >= player.game_date
+
+
+def expected_points(player, calibration):
+    """Bias-adjusted projection for a full game (0 if no game or ruled out)."""
+    if player.on_bye_week or not hasattr(player, "game_date") or player.projected_points <= 0:
+        return 0.0
+    return player.projected_points * calibration.get(str(player.position), FALLBACK)["bias"]
+
+
+def best_lineup(lineup, calibration, now, ignore_locks=False):
+    """The lineup we assume the manager ends up with.
+
+    Players whose games have started are locked where they are. Every other
+    starting slot goes to whichever unlocked players (starters or bench) give
+    the highest total projection, respecting which slots each player may fill.
+    A bench player only displaces a starter if he projects more than
+    MIN_SWAP_GAIN points better, so near-ties stay as the manager set them.
+
+    Returns a list of (slot, player) for the assumed starters.
+    """
+    starters = [p for p in lineup if p.slot_position not in BENCH_SLOTS]
+    bench = [p for p in lineup if p.slot_position == "BE"]  # IR players can't be started
+
+    def locked(p):
+        return not ignore_locks and game_started(p, now)
+
+    assumed = [(p.slot_position, p) for p in starters if locked(p)]
+    open_slots = [p.slot_position for p in starters if not locked(p)]
+    pool = [p for p in starters + bench if not locked(p)]
+    current_slot = {id(p): p.slot_position for p in starters}
+
+    def value(p, slot):
+        worth = expected_points(p, calibration)
+        if id(p) in current_slot:
+            worth += MIN_SWAP_GAIN                                 # incumbents win near-ties
+            worth += 0.001 if current_slot[id(p)] == slot else 0   # and prefer their own slot
+        return worth
+
+    @functools.lru_cache(maxsize=None)
+    def solve(slot_index, used):
+        """Best (total value, choices) for open_slots[slot_index:], given players already used."""
+        if slot_index == len(open_slots):
+            return 0.0, ()
+        slot = open_slots[slot_index]
+        best_total, best_rest = solve(slot_index + 1, used)  # option: leave the slot empty
+        best_choice = None
+        for i, p in enumerate(pool):
+            if used >> i & 1 or slot not in p.eligibleSlots:
+                continue
+            total, rest = solve(slot_index + 1, used | 1 << i)
+            total += value(p, slot)
+            if total > best_total:
+                best_total, best_rest, best_choice = total, rest, i
+        return best_total, (best_choice,) + best_rest
+
+    _, choices = solve(0, 0)
+    assumed += [(slot, pool[i]) for slot, i in zip(open_slots, choices) if i is not None]
+    return assumed
+
+
 def simulate(teams, calibration, now):
-    """teams: list of dicts with 'lineup'. Adds simulation results to each dict."""
+    """teams: list of dicts with 'assumed' starters. Adds simulation results to each dict."""
     prepared = []
     for entry in teams:
         locked = 0.0
         samplers = []
-        for p in entry["lineup"]:
-            if p.slot_position in BENCH_SLOTS:
-                continue
+        for _, p in entry["assumed"]:
             points, sampler = build_sampler(p, calibration, now)
             locked += points
             if sampler:
@@ -203,6 +288,10 @@ def main():
     if not teams:
         sys.exit("ESPN returned no lineups for this week.")
 
+    for t in teams:
+        t["assumed"] = best_lineup(t["lineup"], calibration, now)
+        t["starters"], t["bench"] = team_rows(t, now)
+
     simulate(teams, calibration, now)
     teams.sort(key=lambda t: t["cut_probability"], reverse=True)
 
@@ -215,7 +304,18 @@ def main():
         )
     print("\n  Likely range = the middle 80% of simulated final scores.")
     print("  Left = starters with points still to come.")
-    print(f"  Based on {SIMULATIONS:,} simulations of current starting lineups.")
+    print(f"  Based on {SIMULATIONS:,} simulations, assuming each manager fixes obvious lineup mistakes.")
+
+    print("\nLineup changes the model assumed:")
+    any_swaps = False
+    for t in teams:
+        moved_in = [p["name"] for p in t["starters"] if p["assumed"] == "in"]
+        moved_out = [p["name"] for p in t["bench"] if p["assumed"] == "out"]
+        if moved_in or moved_out:
+            any_swaps = True
+            print(f"  {t['team'].team_name}: start {', '.join(moved_in) or 'nobody'}; bench {', '.join(moved_out) or 'nobody'}")
+    if not any_swaps:
+        print("  None - every lineup is already at (or within a point of) its best.")
 
     output = json.dumps(
             {
@@ -237,8 +337,8 @@ def main():
                         "simulated_low": round(t["sim_low"], 2),
                         "simulated_high": round(t["sim_high"], 2),
                         "starters_remaining": t["players_left"],
-                        "starters": [player_row(p, now) for p in t["lineup"] if p.slot_position not in BENCH_SLOTS],
-                        "bench": [player_row(p, now) for p in t["lineup"] if p.slot_position in BENCH_SLOTS],
+                        "starters": t["starters"],
+                        "bench": t["bench"],
                     }
                     for t in teams
                 ],

@@ -24,7 +24,7 @@ def load_weeks(league):
     weeks = {}
     for week in range(1, league.current_week):
         weeks[week] = [
-            {"team": team, "actual": score, "starters": [p for p in lineup if p.slot_position not in BENCH_SLOTS]}
+            {"team": team, "actual": score, "lineup": lineup, "starters": [p for p in lineup if p.slot_position not in BENCH_SLOTS]}
             for team, score, _, lineup in cut_odds.lineups(league, week)
         ]
     return weeks
@@ -131,6 +131,25 @@ def main():
     print(f"  Real score inside the middle 50%:         {inside_50 / total * 100:.0f}%   (ideal: 50%)")
     print(f"  Real score below the range: {below_10 / total * 100:.0f}%, above it: {above_90 / total * 100:.0f}%   (ideal: 10% each)")
     print(f"  Average percentile of real scores: {sum(percentiles) / total * 100:.0f}   (ideal: 50)")
+
+    # Do managers end up with their best lineup? Compare the lineup each team
+    # actually played with the best one available from their roster's projections.
+    gains = []
+    for week, entries in weeks.items():
+        calibration = calibration_without(weeks, week)
+        for e in entries:
+            best = cut_odds.best_lineup(e["lineup"], calibration, BEFORE_KICKOFF, ignore_locks=True)
+            played = sum(cut_odds.expected_points(p, calibration) for p in e["starters"])
+            gains.append(sum(cut_odds.expected_points(p, calibration) for _, p in best) - played)
+    total = len(gains)
+    none = sum(1 for g in gains if g < 0.01)
+    small = sum(1 for g in gains if 0.01 <= g < 5)
+    big = sum(1 for g in gains if g >= 5)
+    print(f"\nDid managers play their best-projected lineup?  ({total} team-weeks)")
+    print(f"  Already the model's assumed lineup:        {none / total * 100:.0f}%")
+    print(f"  Left 1-5 projected points on the bench:    {small / total * 100:.0f}%")
+    print(f"  Left 5+ projected points on the bench:     {big / total * 100:.0f}%")
+    print(f"  Average left on the bench: {sum(gains) / total:.1f} projected points per team per week")
 
     eliminated = {t.team_name for t in league.teams if not t.roster}
     lowest_scorers = {min(entries, key=lambda e: e["actual"])["team"].team_name for entries in weeks.values()}

@@ -3,107 +3,164 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
 <title>Guillotine Watch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    color-scheme: light;
-    --page: #f9f9f7;
-    --surface: #fcfcfb;
-    --ink: #0b0b0b;
-    --ink-2: #52514e;
-    --muted: #6f6d68;
-    --hairline: #e1e0d9;
-    --track: #efeee9;
-    --bar: #2a78d6;
-    --critical: #d03b3b;
-    --border: rgba(11, 11, 11, 0.10);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      color-scheme: dark;
-      --page: #0d0d0d;
-      --surface: #1a1a19;
-      --ink: #f0efec;
-      --ink-2: #c3c2b7;
-      --muted: #969489;
-      --hairline: #2c2c2a;
-      --track: #262624;
-      --bar: #3987e5;
-      --critical: #e66767;
-      --border: rgba(255, 255, 255, 0.10);
-    }
+    color-scheme: dark;
+    --page: #0a0a0b;
+    --surface: #141415;
+    --surface-2: #1c1c1e;
+    --ink: #f3f0ea;
+    --ink-2: #b9b6ad;
+    --muted: #8a8880;
+    --hairline: #29292b;
+    --track: #232325;
+    --blood: #e5383b;
+    --blood-deep: #7d1114;
+    /* danger tiers: always shown with a text label, never colour alone */
+    --tier-block: #e5383b;
+    --tier-danger: #ec835a;
+    --tier-nervous: #fab219;
+    --tier-safe: #3fae5a;
+    --display: "Oswald", "Bebas Neue", Impact, "Arial Narrow Bold", "Arial Narrow", sans-serif;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    background: var(--page);
+    background:
+      radial-gradient(900px 420px at 50% -120px, rgba(229, 56, 59, 0.20), transparent 70%),
+      var(--page);
     color: var(--ink);
     font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+    min-height: 100vh;
   }
-  main { max-width: 760px; margin: 0 auto; padding: 28px 16px 48px; }
-  h1 { font-size: 1.6rem; margin: 0; letter-spacing: -0.01em; }
-  .sub { color: var(--ink-2); margin: 4px 0 0; }
+  main { max-width: 780px; margin: 0 auto; padding: 26px 16px 56px; }
 
+  header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px; }
+  .kicker {
+    font-family: var(--display); font-weight: 500; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--blood); font-size: 0.82rem;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 700; text-transform: uppercase;
+    font-size: clamp(2rem, 7vw, 3.1rem); line-height: 1; letter-spacing: 0.01em; margin: 4px 0 6px;
+  }
+  .sub { color: var(--ink-2); margin: 0; font-size: 0.95rem; }
+
+  .refresh { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  button.update {
+    font-family: var(--display); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase;
+    font-size: 0.9rem; color: var(--ink); background: var(--surface-2);
+    border: 1px solid #3a3a3d; border-radius: 6px; padding: 9px 16px; cursor: pointer;
+  }
+  button.update:hover { border-color: var(--blood); background: #241516; }
+  button.update:focus-visible { outline: 2px solid var(--blood); outline-offset: 2px; }
+  button.update:disabled { opacity: 0.6; cursor: progress; }
+  .refresh-status { color: var(--muted); font-size: 0.8rem; min-height: 1.2em; text-align: right; }
+
+  /* ---------- the chopping block ---------- */
   .hero {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px 20px;
-    margin: 22px 0;
+    position: relative; overflow: hidden;
+    margin: 24px 0 30px; padding: 54px 22px 24px;
+    background: linear-gradient(180deg, #1d0c0d 0%, var(--surface) 70%);
+    border: 1px solid #3b1517; border-radius: 10px;
+    box-shadow: 0 0 60px rgba(229, 56, 59, 0.14);
+  }
+  /* the blade: a slanted steel edge hanging over the condemned */
+  .hero::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 40px;
+    background: linear-gradient(180deg, #5c6068 0%, #c9ccd2 55%, #f4f5f7 100%);
+    clip-path: polygon(0 0, 100% 0, 100% 22%, 0 100%);
+  }
+  .hero::after {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 40px;
+    background: var(--blood); opacity: 0.85;
+    clip-path: polygon(0 88%, 100% 12%, 100% 22%, 0 100%);
   }
   .hero .label {
-    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-2);
+    font-family: var(--display); font-weight: 500; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--blood); font-size: 0.86rem;
   }
-  .hero .name { font-size: 1.35rem; font-weight: 650; margin-top: 2px; }
-  .hero .figure { font-size: 2.6rem; font-weight: 700; line-height: 1.1; }
-  .hero .note { color: var(--ink-2); font-size: 0.92rem; margin-top: 4px; }
-
-  h2 { font-size: 1.05rem; margin: 26px 0 2px; }
-  .hint { color: var(--ink-2); font-size: 0.88rem; margin: 0 0 10px; }
-
-  .teams {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
+  .hero .name {
+    font-family: var(--display); font-weight: 700; text-transform: uppercase;
+    font-size: clamp(1.7rem, 6.4vw, 2.7rem); line-height: 1.05; margin: 6px 0 2px;
+    overflow-wrap: anywhere;
   }
-  details + details { border-top: 1px solid var(--hairline); }
+  .hero .figure {
+    font-family: var(--display); font-weight: 700; color: var(--blood);
+    font-size: clamp(4.2rem, 19vw, 7.5rem); line-height: 0.95; letter-spacing: -0.01em;
+    text-shadow: 0 0 34px rgba(229, 56, 59, 0.45);
+    animation: pulse 2.6s ease-in-out infinite;
+  }
+  .hero .figure small { font-size: 0.42em; margin-left: 2px; }
+  .hero .note { color: var(--ink-2); font-size: 0.95rem; margin-top: 8px; max-width: 46ch; }
+  @keyframes pulse {
+    0%, 100% { text-shadow: 0 0 26px rgba(229, 56, 59, 0.30); }
+    50% { text-shadow: 0 0 52px rgba(229, 56, 59, 0.70); }
+  }
+  @media (prefers-reduced-motion: reduce) { .hero .figure { animation: none; } }
+
+  h2 {
+    font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    font-size: 1.25rem; margin: 30px 0 2px;
+  }
+  .hint { color: var(--ink-2); font-size: 0.88rem; margin: 0 0 12px; }
+
+  /* ---------- the ranking ---------- */
+  .teams { display: flex; flex-direction: column; gap: 8px; }
+  details {
+    background: var(--surface); border: 1px solid var(--hairline); border-left: 4px solid var(--tier);
+    border-radius: 8px; overflow: hidden;
+  }
+  details.block { background: linear-gradient(90deg, #211012 0%, var(--surface) 60%); border-color: #3b1517; border-left-color: var(--tier); }
   summary {
-    list-style: none;
-    cursor: pointer;
-    padding: 12px 16px 12px 12px;
-    display: grid;
-    grid-template-columns: 22px minmax(0, 1fr) auto;
-    column-gap: 8px;
-    row-gap: 6px;
-    align-items: center;
+    list-style: none; cursor: pointer; padding: 13px 16px 13px 12px;
+    display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; column-gap: 10px; row-gap: 7px; align-items: center;
   }
   summary::-webkit-details-marker { display: none; }
-  summary:hover { background: var(--track); }
-  summary:focus-visible { outline: 2px solid var(--bar); outline-offset: -2px; }
-  .chev { color: var(--muted); transition: transform 0.15s; text-align: center; }
-  details[open] .chev { transform: rotate(90deg); }
-  .team { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .pct { font-weight: 700; font-variant-numeric: tabular-nums; }
-  .track {
-    grid-column: 2 / 4;
-    height: 10px;
-    background: var(--track);
-    border-radius: 0 4px 4px 0;
+  summary:hover { background: rgba(255, 255, 255, 0.03); }
+  summary:focus-visible { outline: 2px solid var(--blood); outline-offset: -2px; }
+  .rank { font-family: var(--display); font-weight: 700; font-size: 1.5rem; color: var(--muted); text-align: center; line-height: 1; }
+  .who { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+  .team { font-family: var(--display); font-weight: 500; text-transform: uppercase; letter-spacing: 0.02em; font-size: 1.2rem; overflow-wrap: anywhere; }
+  .tier {
+    font-family: var(--display); font-weight: 500; text-transform: uppercase; letter-spacing: 0.14em;
+    font-size: 0.72rem; color: var(--ink); white-space: nowrap;
   }
-  .fill { height: 100%; background: var(--bar); border-radius: 0 4px 4px 0; min-width: 2px; }
+  .tier::before {
+    content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--tier); margin-right: 6px; vertical-align: 1px;
+  }
+  .pct { font-family: var(--display); font-weight: 700; font-size: 1.75rem; line-height: 1; font-variant-numeric: tabular-nums; }
+
+  /* The bar runs on a fixed 0-100% scale: a 25% chance fills a quarter of it. */
+  .gauge { grid-column: 2 / 4; }
+  .track { position: relative; height: 12px; background: var(--track); border-radius: 0 4px 4px 0; }
+  .fill { height: 100%; background: var(--tier); border-radius: 0 4px 4px 0; min-width: 3px; }
+  .tick { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255, 255, 255, 0.16); }
+  .scale { position: relative; height: 14px; color: var(--muted); font-size: 0.68rem; font-variant-numeric: tabular-nums; }
+  .scale span { position: absolute; top: 2px; transform: translateX(-50%); }
+  .scale span:first-child { transform: none; }
+  .scale span:last-child { transform: translateX(-100%); }
+
   .meta {
-    grid-column: 2 / 4;
-    display: flex; flex-wrap: wrap; gap: 2px 16px;
+    grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 2px 16px;
     color: var(--ink-2); font-size: 0.86rem; font-variant-numeric: tabular-nums;
   }
   .meta b { color: var(--ink); font-weight: 600; }
   .assume { grid-column: 2 / 4; color: var(--ink-2); font-size: 0.86rem; font-style: italic; }
+  .more { grid-column: 2 / 4; color: var(--muted); font-size: 0.8rem; }
+  .more::before { content: "▸ "; }
+  details[open] .more::before { content: "▾ "; }
 
-  .lineup { padding: 0 16px 14px 42px; overflow-x: auto; }
+  .lineup { padding: 0 16px 14px 52px; overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; font-size: 0.88rem; font-variant-numeric: tabular-nums; }
   th {
-    text-align: left; font-weight: 500; color: var(--muted); font-size: 0.78rem;
+    text-align: left; font-weight: 500; color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.08em;
     padding: 4px 8px 4px 0; border-bottom: 1px solid var(--hairline);
   }
   td { padding: 5px 8px 5px 0; border-bottom: 1px solid var(--hairline); white-space: nowrap; }
@@ -111,36 +168,65 @@
   .num { text-align: right; }
   td.slot, td.dim { color: var(--ink-2); }
   tr.bench td { color: var(--muted); }
-  .warn { color: var(--critical); font-weight: 600; }
+  .warn { color: var(--blood); font-weight: 600; }
 
   .method { color: var(--ink-2); font-size: 0.9rem; }
   .method p { margin: 6px 0; }
-  .empty { padding: 24px 16px; color: var(--ink-2); }
-  @media (max-width: 480px) {
+  .method a { color: var(--ink-2); }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0 0 12px; padding: 0; list-style: none; color: var(--ink-2); font-size: 0.82rem; }
+  .legend li::before {
+    content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--tier); margin-right: 6px; vertical-align: 1px;
+  }
+  .empty { padding: 24px 16px; color: var(--ink-2); background: var(--surface); border-radius: 8px; }
+
+  .t-block { --tier: var(--tier-block); }
+  .t-danger { --tier: var(--tier-danger); }
+  .t-nervous { --tier: var(--tier-nervous); }
+  .t-safe { --tier: var(--tier-safe); }
+
+  @media (max-width: 520px) {
+    .refresh { align-items: flex-start; width: 100%; }
+    .refresh-status { text-align: left; }
     .lineup { padding-left: 12px; padding-right: 12px; }
-    th, td { padding-right: 6px; }
+    th, td { padding-right: 5px; }
     th:last-child, td:last-child { padding-right: 0; }
-    .hero .figure { font-size: 2.2rem; }
+    table { font-size: 0.8rem; }
+    td:last-child { white-space: normal; min-width: 4.5em; }
+    summary { grid-template-columns: 24px minmax(0, 1fr) auto; column-gap: 8px; }
+    .pct { font-size: 1.5rem; }
   }
 </style>
 </head>
 <body>
 <main>
   <header>
-    <h1 id="title">Guillotine Watch</h1>
-    <p class="sub" id="subtitle"></p>
+    <div>
+      <div class="kicker">Guillotine Watch</div>
+      <h1 id="title">Who gets the chop?</h1>
+      <p class="sub" id="subtitle"></p>
+    </div>
+    <div class="refresh">
+      <button class="update" id="update" type="button">↻ Update now</button>
+      <div class="refresh-status" id="refresh-status" aria-live="polite"></div>
+    </div>
   </header>
 
   <section class="hero" id="hero" hidden>
-    <div class="label">Most likely to be cut</div>
+    <div class="label" id="hero-label">On the chopping block</div>
     <div class="name" id="hero-name"></div>
     <div class="figure" id="hero-figure"></div>
     <div class="note" id="hero-note"></div>
   </section>
 
-  <h2>Chance of being cut this week</h2>
-  <p class="hint">Lowest score at the end of the week is eliminated. Select a team to see its lineup.
-    This page updates itself.</p>
+  <h2>The line-up for the blade</h2>
+  <p class="hint">Lowest score this week is eliminated. Each bar shows the chance out of 100%. Select a team to see its players.</p>
+  <ul class="legend">
+    <li class="t-block">On the block (20%+)</li>
+    <li class="t-danger">In danger (10–20%)</li>
+    <li class="t-nervous">Nervous (5–10%)</li>
+    <li class="t-safe">Safe for now (under 5%)</li>
+  </ul>
   <section class="teams" id="teams">
     <div class="empty">No data yet. Run <code>cut_odds.py</code> to generate it.</div>
   </section>
@@ -156,72 +242,120 @@
       hasn't started is assumed to replace a starter he out-projects by more than a point. Players whose
       games have kicked off are locked in place. Any assumed change is shown on the team's row.</p>
     <p>Players are treated as independent of one another.</p>
+    <p>The numbers are recalculated automatically every 10 to 20 minutes. "Update now" loads the newest
+      calculation. League owner: <a href="https://github.com/thawes13/guillotine-watch/actions/workflows/update-site.yml"
+      target="_blank" rel="noopener">force a fresh calculation</a>.</p>
   </section>
 </main>
 
 <script src="data.js"></script>
 <script>
 var shownVersion = null;
+var lastGenerated = null;
+
+function $(id) { return document.getElementById(id); }
+function el(tag, cls, text) {
+  var node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+function pct(p) {
+  if (p > 0 && p < 0.001) return "<0.1%";
+  if (p >= 0.9995) return "100%";
+  return (p * 100).toFixed(1) + "%";
+}
+function tierOf(p) {
+  if (p >= 0.20) return ["t-block", "On the block"];
+  if (p >= 0.10) return ["t-danger", "In danger"];
+  if (p >= 0.05) return ["t-nervous", "Nervous"];
+  return ["t-safe", "Safe for now"];
+}
+function ago(date) {
+  var minutes = Math.round((Date.now() - date.getTime()) / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes === 1) return "1 minute ago";
+  if (minutes < 60) return minutes + " minutes ago";
+  var hours = Math.round(minutes / 60);
+  return hours === 1 ? "1 hour ago" : hours + " hours ago";
+}
+function showAge() {
+  if (!lastGenerated) return;
+  $("subtitle").textContent = $("subtitle").dataset.base + " · calculated " + ago(lastGenerated);
+}
+
+var STATUS = { bye: "Bye", final: "Final", out: "Out", playing: "Playing", upcoming: "To play" };
+
+function lineupTable(team) {
+  var table = el("table");
+  var head = el("tr");
+  [["Slot"], ["Player"], ["Team"], ["Pts", "num"], ["Proj", "num"], ["Status"]].forEach(function (h) {
+    head.appendChild(el("th", h[1], h[0]));
+  });
+  table.appendChild(head);
+  team.starters.concat(team.bench).forEach(function (p, i) {
+    var isStarter = i < team.starters.length;
+    var row = el("tr", isStarter ? "" : "bench");
+    row.appendChild(el("td", "slot", p.slot));
+    row.appendChild(el("td", "", p.name));
+    row.appendChild(el("td", "dim", p.nfl_team));
+    row.appendChild(el("td", "num", p.points.toFixed(1)));
+    row.appendChild(el("td", "num", p.projected.toFixed(1)));
+    var dead = isStarter && (p.status === "bye" || p.status === "out");
+    var note = p.assumed === "in" ? " · assumed in" : p.assumed === "out" ? " · assumed out" : "";
+    row.appendChild(el("td", dead ? "warn" : "dim", (dead ? "⚠ " : "") + STATUS[p.status] + note));
+    table.appendChild(row);
+  });
+  return table;
+}
+
+function gauge(p) {
+  var wrap = el("div", "gauge");
+  var track = el("div", "track");
+  var fill = el("div", "fill");
+  fill.style.width = (p * 100) + "%";
+  track.appendChild(fill);
+  [25, 50, 75].forEach(function (mark) {
+    var tick = el("div", "tick");
+    tick.style.left = mark + "%";
+    track.appendChild(tick);
+  });
+  wrap.appendChild(track);
+  var scale = el("div", "scale");
+  [0, 25, 50, 75, 100].forEach(function (mark) {
+    var label = el("span", "", mark + "%");
+    label.style.left = mark + "%";
+    scale.appendChild(label);
+  });
+  wrap.appendChild(scale);
+  return wrap;
+}
 
 function render(data) {
-  if (!data || !data.teams || !data.teams.length) return;
-  if (data.generated_at === shownVersion) return;  // nothing new
+  if (!data || !data.teams || !data.teams.length) return false;
+  if (data.generated_at === shownVersion) return false;  // nothing new
   shownVersion = data.generated_at;
+  lastGenerated = new Date(data.generated_at);
 
-  var $ = function (id) { return document.getElementById(id); };
-  var pct = function (p) {
-    if (p > 0 && p < 0.001) return "<0.1%";
-    return (p * 100).toFixed(1) + "%";
-  };
-  var el = function (tag, cls, text) {
-    var node = document.createElement(tag);
-    if (cls) node.className = cls;
-    if (text !== undefined) node.textContent = text;
-    return node;
-  };
-
-  var updated = new Date(data.generated_at);
-  $("title").textContent = data.league + " — Guillotine Watch";
   document.title = data.league + " — Guillotine Watch";
-  $("subtitle").textContent = "Week " + data.week + " · " + data.teams.length + " teams left · updated " +
-    updated.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  $("subtitle").dataset.base = data.league + " · Week " + data.week + " · " + data.teams.length + " teams left";
+  showAge();
   $("sims").textContent = data.simulations.toLocaleString();
 
   var top = data.teams[0];
+  var decided = top.cut_probability >= 0.9995;
+  $("hero-label").textContent = decided ? "The blade has fallen" : "On the chopping block";
   $("hero-name").textContent = top.team_name;
-  $("hero-figure").textContent = pct(top.cut_probability);
-  $("hero-note").textContent = "Projected to finish around " + Math.round(top.simulated_mean) +
-    " points, with " + top.starters_remaining + " starters still to play.";
+  var figure = $("hero-figure");
+  figure.textContent = "";
+  var number = pct(top.cut_probability);
+  figure.appendChild(document.createTextNode(number.replace("%", "")));
+  figure.appendChild(el("small", "", "%"));
+  $("hero-note").textContent = decided
+    ? "Lowest score of the week. Finished on " + top.live_score.toFixed(1) + " points."
+    : "chance of being cut. Projected to finish around " + Math.round(top.simulated_mean) +
+      " points with " + top.starters_remaining + " starters still to play.";
   $("hero").hidden = false;
-
-  // Bars share one scale that starts at zero and ends just past the largest value.
-  var maxP = Math.max.apply(null, data.teams.map(function (t) { return t.cut_probability; }));
-  var scaleMax = Math.min(1, Math.max(0.1, Math.ceil(maxP * 10) / 10));
-
-  var STATUS = { bye: "Bye", final: "Final", out: "Out", playing: "Playing", upcoming: "To play" };
-
-  function lineupTable(team) {
-    var table = el("table");
-    var head = el("tr");
-    [["Slot"], ["Player"], ["Team"], ["Pts", "num"], ["Proj", "num"], ["Status"]].forEach(function (h) {
-      head.appendChild(el("th", h[1], h[0]));
-    });
-    table.appendChild(head);
-    team.starters.concat(team.bench).forEach(function (p, i) {
-      var row = el("tr", i >= team.starters.length ? "bench" : "");
-      row.appendChild(el("td", "slot", p.slot));
-      row.appendChild(el("td", "", p.name));
-      row.appendChild(el("td", "dim", p.nfl_team));
-      row.appendChild(el("td", "num", p.points.toFixed(1)));
-      row.appendChild(el("td", "num", p.projected.toFixed(1)));
-      var isStarter = i < team.starters.length;
-      var dead = isStarter && (p.status === "bye" || p.status === "out");
-      var note = p.assumed === "in" ? " · assumed to start" : p.assumed === "out" ? " · assumed benched" : "";
-      row.appendChild(el("td", dead ? "warn" : "dim", (dead ? "⚠ " : "") + STATUS[p.status] + note));
-      table.appendChild(row);
-    });
-    return table;
-  }
 
   var list = $("teams");
   // Remember which lineups are expanded so a data refresh doesn't collapse them.
@@ -229,21 +363,21 @@ function render(data) {
     return d.dataset.teamId;
   });
   list.textContent = "";
-  data.teams.forEach(function (team) {
-    var details = el("details");
+  data.teams.forEach(function (team, index) {
+    var tier = tierOf(team.cut_probability);
+    var details = el("details", tier[0] + (tier[0] === "t-block" ? " block" : ""));
     details.dataset.teamId = team.team_id;
     details.open = openIds.indexOf(String(team.team_id)) !== -1;
+
     var summary = el("summary");
     summary.title = team.team_name + ": " + pct(team.cut_probability) + " chance of being cut";
-    summary.appendChild(el("span", "chev", "›"));
-    summary.appendChild(el("span", "team", team.team_name));
+    summary.appendChild(el("span", "rank", String(index + 1)));
+    var who = el("span", "who");
+    who.appendChild(el("span", "team", team.team_name));
+    who.appendChild(el("span", "tier", tier[1]));
+    summary.appendChild(who);
     summary.appendChild(el("span", "pct", pct(team.cut_probability)));
-
-    var track = el("div", "track");
-    var fill = el("div", "fill");
-    fill.style.width = (team.cut_probability / scaleMax * 100) + "%";
-    track.appendChild(fill);
-    summary.appendChild(track);
+    summary.appendChild(gauge(team.cut_probability));
 
     var meta = el("div", "meta");
     [["Now", team.live_score.toFixed(1)],
@@ -259,10 +393,11 @@ function render(data) {
     var movedIn = team.starters.filter(function (p) { return p.assumed === "in"; });
     var movedOut = team.bench.filter(function (p) { return p.assumed === "out"; });
     if (movedIn.length || movedOut.length) {
-      var names = function (list) { return list.map(function (p) { return p.name; }).join(", "); };
+      var names = function (people) { return people.map(function (p) { return p.name; }).join(", "); };
       summary.appendChild(el("div", "assume",
         "Assumes a lineup change: " + names(movedIn) + " starts in place of " + names(movedOut) + "."));
     }
+    summary.appendChild(el("div", "more", "Players and projections"));
 
     details.appendChild(summary);
     var lineup = el("div", "lineup");
@@ -270,18 +405,35 @@ function render(data) {
     details.appendChild(lineup);
     list.appendChild(details);
   });
+  return true;
+}
+
+// Load the newest published data.js and redraw if it changed.
+function checkForUpdate(done) {
+  var script = document.createElement("script");
+  script.src = "data.js?t=" + Date.now();
+  script.onload = function () { var changed = render(window.CUT_DATA); script.remove(); if (done) done(true, changed); };
+  script.onerror = function () { script.remove(); if (done) done(false, false); };
+  document.head.appendChild(script);
 }
 
 render(window.CUT_DATA);
+setInterval(checkForUpdate, 60000);   // look for new numbers every minute
+setInterval(showAge, 30000);          // keep "calculated N minutes ago" current
 
-// Check for newer data once a minute by reloading data.js, then redraw if it changed.
-setInterval(function () {
-  var script = document.createElement("script");
-  script.src = "data.js?t=" + Date.now();
-  script.onload = function () { render(window.CUT_DATA); script.remove(); };
-  script.onerror = function () { script.remove(); };
-  document.head.appendChild(script);
-}, 60000);
+$("update").addEventListener("click", function () {
+  var button = $("update");
+  var status = $("refresh-status");
+  button.disabled = true;
+  status.textContent = "Checking…";
+  checkForUpdate(function (ok, changed) {
+    button.disabled = false;
+    showAge();
+    if (!ok) status.textContent = "Couldn't reach the server. Try again.";
+    else if (changed) status.textContent = "New numbers loaded.";
+    else status.textContent = "Already the latest (calculated " + ago(lastGenerated) + ").";
+  });
+});
 </script>
 </body>
 </html>

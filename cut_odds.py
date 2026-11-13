@@ -67,6 +67,16 @@ def calibrate(league):
                     continue
                 samples.setdefault(str(p.position), []).append((p.projected_points, p.points))
 
+    positions = fit_calibration(samples)
+    CALIBRATION_FILE.write_text(
+        json.dumps({"league_id": league.league_id, "through_week": through_week, "positions": positions}, indent=2),
+        encoding="utf-8",
+    )
+    return positions
+
+
+def fit_calibration(samples):
+    """samples: position -> list of (projected, actual). Returns bias and spread per position."""
     positions = {}
     for position, pairs in samples.items():
         if len(pairs) < MIN_SAMPLES:
@@ -82,11 +92,6 @@ def calibrate(league):
             # absolute spread in points (used for D/ST and K)
             "spread_points": round(math.sqrt(squared_miss / len(pairs)), 4),
         }
-
-    CALIBRATION_FILE.write_text(
-        json.dumps({"league_id": league.league_id, "through_week": through_week, "positions": positions}, indent=2),
-        encoding="utf-8",
-    )
     return positions
 
 

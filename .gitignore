@@ -1,0 +1,16 @@
+# Secrets - never commit
+.env
+
+# Generated on every run
+site/data.js
+site/data.tmp
+cut_probabilities.json
+calibration.json
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Local tooling
+.claude/

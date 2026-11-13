@@ -1,0 +1,59 @@
+name: Update site
+
+# Recalculates the cut probabilities and republishes the website.
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # every 10 minutes (GitHub may run it a little late)
+  workflow_dispatch:          # lets you run it by hand from the Actions tab
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never run two updates at once; let the one in progress finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      # Reuse the weeks-played calibration between runs so ESPN isn't asked
+      # for the whole season's history every 10 minutes.
+      - uses: actions/cache@v4
+        with:
+          path: calibration.json
+          key: calibration-${{ github.run_id }}
+          restore-keys: calibration-
+
+      - name: Calculate cut probabilities
+        run: python cut_odds.py
+        env:
+          ESPN_S2: ${{ secrets.ESPN_S2 }}
+          SWID: ${{ secrets.SWID }}
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

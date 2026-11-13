@@ -2,9 +2,11 @@ name: Update site
 
 # Recalculates the cut probabilities and republishes the website.
 on:
+  # Main trigger: the Cloudflare relay (relay/worker.js) starts this every
+  # 5 minutes and whenever someone presses "Update now" on the site.
+  workflow_dispatch:
   schedule:
-    - cron: "*/10 * * * *"   # every 10 minutes (GitHub may run it a little late)
-  workflow_dispatch:          # lets you run it by hand from the Actions tab
+    - cron: "*/30 * * * *"   # backup only, in case the relay is down
   push:
     branches: [main]
 

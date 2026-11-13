@@ -1,0 +1,16 @@
+name = "guillotine-relay"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+workers_dev = true
+
+# Ask GitHub for a fresh calculation every 5 minutes.
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+REPO = "thawes13/guillotine-watch"
+WORKFLOW = "update-site.yml"
+ALLOWED_ORIGIN = "https://thawes13.github.io"
+
+# GITHUB_TOKEN is stored separately as an encrypted secret:
+#   npx wrangler secret put GITHUB_TOKEN

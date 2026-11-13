@@ -12,5 +12,10 @@ calibration.json
 __pycache__/
 *.pyc
 
+# Relay tooling
+node_modules/
+.wrangler/
+.dev.vars
+
 # Local tooling
 .claude/

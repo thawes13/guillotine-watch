@@ -242,9 +242,8 @@
       hasn't started is assumed to replace a starter he out-projects by more than a point. Players whose
       games have kicked off are locked in place. Any assumed change is shown on the team's row.</p>
     <p>Players are treated as independent of one another.</p>
-    <p>The numbers are recalculated automatically every 10 to 20 minutes. "Update now" loads the newest
-      calculation. League owner: <a href="https://github.com/thawes13/guillotine-watch/actions/workflows/update-site.yml"
-      target="_blank" rel="noopener">force a fresh calculation</a>.</p>
+    <p>The numbers are recalculated automatically every 5 minutes. "Update now" requests a fresh
+      calculation straight away, which takes about a minute.</p>
   </section>
 </main>
 
@@ -421,11 +420,12 @@ checkForUpdate();
 setInterval(checkForUpdate, 60000);
 setInterval(showAge, 30000);          // keep "calculated N minutes ago" current
 
-$("update").addEventListener("click", function () {
-  var button = $("update");
-  var status = $("refresh-status");
-  button.disabled = true;
-  status.textContent = "Checking…";
+// Address of the relay that asks GitHub for a fresh calculation (see relay/worker.js).
+// Leave empty to make the button only load the newest published numbers.
+var RELAY_URL = "https://guillotine-relay.thawes13.workers.dev";
+var WAIT_SECONDS = 150;   // how long to wait for a requested calculation to appear
+
+function loadLatest(button, status) {
   checkForUpdate(function (ok, changed) {
     button.disabled = false;
     showAge();
@@ -433,6 +433,51 @@ $("update").addEventListener("click", function () {
     else if (changed) status.textContent = "New numbers loaded.";
     else status.textContent = "Already the latest (calculated " + ago(lastGenerated) + ").";
   });
+}
+
+// After asking for a calculation, look for the new numbers every 5 seconds until they land.
+function waitForNewNumbers(button, status, message) {
+  var started = Date.now();
+  var before = shownVersion;
+  (function look() {
+    var waited = Math.round((Date.now() - started) / 1000);
+    status.textContent = message + " " + waited + "s…";
+    checkForUpdate(function () {
+      if (shownVersion !== before) {
+        button.disabled = false;
+        status.textContent = "Fresh numbers loaded.";
+      } else if (waited >= WAIT_SECONDS) {
+        button.disabled = false;
+        status.textContent = "Taking longer than usual. Try again in a minute.";
+      } else {
+        setTimeout(look, 5000);
+      }
+    });
+  })();
+}
+
+$("update").addEventListener("click", function () {
+  var button = $("update");
+  var status = $("refresh-status");
+  button.disabled = true;
+  if (!RELAY_URL) {
+    status.textContent = "Checking…";
+    loadLatest(button, status);
+    return;
+  }
+  status.textContent = "Requesting a fresh calculation…";
+  fetch(RELAY_URL, { method: "POST" })
+    .then(function (response) { return response.json(); })
+    .then(function (result) {
+      if (result.status === "started") waitForNewNumbers(button, status, "Recalculating, about a minute.");
+      else if (result.status === "running") waitForNewNumbers(button, status, "A calculation is already running.");
+      else if (result.status === "recent") { status.textContent = "Just recalculated. Loading it…"; loadLatest(button, status); }
+      else { status.textContent = "Couldn't start a calculation. Loading the latest instead…"; loadLatest(button, status); }
+    })
+    .catch(function () {
+      status.textContent = "Couldn't reach the update service. Loading the latest instead…";
+      loadLatest(button, status);
+    });
 });
 </script>
 </body>

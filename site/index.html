@@ -248,7 +248,6 @@
   </section>
 </main>
 
-<script src="data.js"></script>
 <script>
 var shownVersion = null;
 var lastGenerated = null;
@@ -417,8 +416,9 @@ function checkForUpdate(done) {
   document.head.appendChild(script);
 }
 
-render(window.CUT_DATA);
-setInterval(checkForUpdate, 60000);   // look for new numbers every minute
+// Always fetch data.js fresh (never from the browser's cache), on load and every minute after.
+checkForUpdate();
+setInterval(checkForUpdate, 60000);
 setInterval(showAge, 30000);          // keep "calculated N minutes ago" current
 
 $("update").addEventListener("click", function () {
